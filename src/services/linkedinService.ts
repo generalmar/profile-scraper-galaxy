@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 
 export interface LinkedInProfile {
@@ -13,6 +12,7 @@ export interface LinkedInProfile {
   recommendations: Recommendation[];
   connectionCount: number | null;
   followers: number | null;
+  publicProfile?: boolean;
 }
 
 export interface Experience {

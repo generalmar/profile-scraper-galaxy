@@ -1,7 +1,7 @@
 
 # LinkedIn Profile Scraper
 
-This application scrapes LinkedIn profiles and displays the extracted information in a clean, modern interface.
+This application scrapes LinkedIn profiles and displays the extracted information in a clean, modern interface. It works with public profiles without requiring LinkedIn login credentials.
 
 ## Project Structure
 
@@ -27,13 +27,7 @@ This application scrapes LinkedIn profiles and displays the extracted informatio
    npx playwright install chromium
    ```
 
-4. Set up environment variables by creating a `.env` file in the root directory with:
-   ```
-   LINKEDIN_USERNAME=your_linkedin_email@example.com
-   LINKEDIN_PASSWORD=your_linkedin_password
-   ```
-
-5. Start the backend server:
+4. Start the backend server:
    ```
    npm run dev
    ```
@@ -56,8 +50,13 @@ This application scrapes LinkedIn profiles and displays the extracted informatio
 2. Enter a LinkedIn profile URL in the format: `https://www.linkedin.com/in/username`
 3. Click "Scrape" to extract the profile information
 
+## Public vs. Private Profiles
+
+- **Public Profiles**: For profiles that are publicly accessible, you'll get basic information like name, headline, and location.
+- **Private Profiles**: For profiles that require authentication, you'll see a message indicating limited data availability.
+
 ## Important Notes
 
 - **LinkedIn Terms of Service**: Scraping LinkedIn may violate their Terms of Service. Use this tool responsibly and for educational purposes only.
-- **Rate Limiting**: LinkedIn may rate-limit or block your account if you scrape too many profiles in a short period. Add delays between requests to avoid this.
-- **Authentication**: This scraper requires a valid LinkedIn account for authentication. Your credentials are used locally and not stored anywhere else.
+- **Rate Limiting**: LinkedIn may rate-limit or block your IP if you scrape too many profiles in a short period. Add delays between requests to avoid this.
+- **Legal Considerations**: Check your local laws regarding web scraping and data collection. Respect user privacy and data protection regulations.

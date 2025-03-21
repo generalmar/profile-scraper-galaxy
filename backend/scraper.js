@@ -26,38 +26,6 @@ const extractMultiple = async (page, selector, extractor) => {
   }
 };
 
-const loginToLinkedIn = async (page) => {
-  const username = process.env.LINKEDIN_USERNAME;
-  const password = process.env.LINKEDIN_PASSWORD;
-  
-  if (!username || !password) {
-    throw new Error('LinkedIn credentials not provided in environment variables');
-  }
-
-  await page.goto('https://www.linkedin.com/login');
-  
-  // Wait for the login form to be visible
-  await page.waitForSelector('#username', { timeout: 10000 });
-  
-  // Enter credentials
-  await page.fill('#username', username);
-  await page.fill('#password', password);
-  
-  // Click login button
-  await page.click('[type="submit"]');
-  
-  // Wait for navigation to complete
-  await page.waitForNavigation({ waitUntil: 'networkidle' });
-  
-  // Check if login was successful
-  const currentUrl = page.url();
-  if (currentUrl.includes('checkpoint') || currentUrl.includes('login')) {
-    throw new Error('LinkedIn login failed. Please check your credentials or solve CAPTCHA manually.');
-  }
-  
-  console.log('Successfully logged into LinkedIn');
-};
-
 const scrapeLinkedInProfile = async (profileUrl) => {
   const browser = await chromium.launch({
     headless: true, // Set to false for debugging
@@ -71,15 +39,46 @@ const scrapeLinkedInProfile = async (profileUrl) => {
   const page = await context.newPage();
   
   try {
-    // Login to LinkedIn
-    await loginToLinkedIn(page);
-    
-    // Navigate to the profile
+    console.log(`Navigating to profile: ${profileUrl}`);
     await page.goto(profileUrl, { waitUntil: 'networkidle' });
+    
+    // Check if we're on a public profile page
+    const currentUrl = page.url();
+    if (currentUrl.includes('linkedin.com/login') || currentUrl.includes('authwall')) {
+      console.log('Profile requires authentication. Using limited public data extraction.');
+      
+      // Try to extract basic information still visible on public profiles
+      const name = await extractText(page, 'h1.top-card-layout__title');
+      const headline = await extractText(page, 'h2.top-card-layout__headline');
+      const location = await extractText(page, '.top-card-layout__card .top-card__subline-item');
+      
+      let profileImageUrl = null;
+      try {
+        profileImageUrl = await page.$eval('.top-card-layout__card .profile-photo img', img => img.src);
+      } catch (error) {
+        // Profile image might not be available
+      }
+      
+      // Return limited data for public viewing
+      return {
+        name,
+        headline,
+        location,
+        profileImageUrl,
+        about: null,
+        experience: [],
+        education: [],
+        skills: [],
+        recommendations: [],
+        connectionCount: null,
+        followers: null,
+        publicProfile: true
+      };
+    }
     
     // Extract basic profile information
     const name = await extractText(page, 'h1.text-heading-xlarge');
-    const headline = await extractText(page, '.text-body-medium');
+    const headline = await extractText(page, '.text-body-medium.break-words');
     const location = await extractText(page, '.text-body-small.inline.t-black--light.break-words');
     
     // Extract profile image URL
@@ -234,7 +233,8 @@ const scrapeLinkedInProfile = async (profileUrl) => {
       skills,
       recommendations,
       connectionCount,
-      followers
+      followers,
+      publicProfile: false
     };
     
     return profileData;

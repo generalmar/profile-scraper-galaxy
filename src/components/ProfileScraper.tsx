@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { LinkedInProfile, scrapeLinkedInProfile } from '@/services/linkedinService';
 import ProfileDisplay from './ProfileDisplay';
-import { ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowRight, Loader2, AlertCircle, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ProfileScraper: React.FC = () => {
@@ -17,11 +17,13 @@ const ProfileScraper: React.FC = () => {
   const [profile, setProfile] = useState<LinkedInProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isUsingMockData, setIsUsingMockData] = useState(false);
+  const [isPublicProfile, setIsPublicProfile] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsUsingMockData(false);
+    setIsPublicProfile(false);
     
     if (!url.trim()) {
       toast.error('Please enter a LinkedIn profile URL');
@@ -45,7 +47,11 @@ const ProfileScraper: React.FC = () => {
         const isMockName = ["John Doe", "Jane Smith"].includes(response.data.name);
         setIsUsingMockData(isMockName);
         
-        if (isMockName) {
+        // Check if this is a public profile with limited data
+        if (response.data.publicProfile) {
+          setIsPublicProfile(true);
+          toast.warning('Limited data available - profile requires LinkedIn login to view fully');
+        } else if (isMockName) {
           toast.warning('Using mock data. Connect a real backend to get actual LinkedIn data.');
         } else {
           toast.success('Profile scraped successfully!');
@@ -75,7 +81,7 @@ const ProfileScraper: React.FC = () => {
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Backend Required</AlertTitle>
         <AlertDescription>
-          This app requires a backend service to scrape real LinkedIn profiles. 
+          This app requires a backend service to scrape LinkedIn profiles. 
           Without it, demo data will be shown. See console for API request details.
         </AlertDescription>
       </Alert>
@@ -145,6 +151,17 @@ const ProfileScraper: React.FC = () => {
               </AlertDescription>
             </Alert>
           )}
+          
+          {isPublicProfile && (
+            <Alert className="mb-6" variant="warning">
+              <Info className="h-4 w-4" />
+              <AlertTitle>Limited Public Profile Data</AlertTitle>
+              <AlertDescription>
+                Only showing limited data available from the public profile. For full profile data, LinkedIn login would be required.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <ProfileDisplay profile={profile} />
         </div>
       )}
