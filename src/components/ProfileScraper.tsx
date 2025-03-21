@@ -8,17 +8,20 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { LinkedInProfile, scrapeLinkedInProfile } from '@/services/linkedinService';
 import ProfileDisplay from './ProfileDisplay';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ProfileScraper: React.FC = () => {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<LinkedInProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isUsingMockData, setIsUsingMockData] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsUsingMockData(false);
     
     if (!url.trim()) {
       toast.error('Please enter a LinkedIn profile URL');
@@ -38,7 +41,15 @@ const ProfileScraper: React.FC = () => {
       
       if (response.success && response.data) {
         setProfile(response.data);
-        toast.success('Profile scraped successfully!');
+        // Check if we're using mock data by checking if the name matches one of our demo profiles
+        const isMockName = ["John Doe", "Jane Smith"].includes(response.data.name);
+        setIsUsingMockData(isMockName);
+        
+        if (isMockName) {
+          toast.warning('Using mock data. Connect a real backend to get actual LinkedIn data.');
+        } else {
+          toast.success('Profile scraped successfully!');
+        }
       } else {
         setError(response.error || 'An error occurred while scraping the profile');
         toast.error('Failed to scrape profile');
@@ -59,6 +70,15 @@ const ProfileScraper: React.FC = () => {
           Extract professional information from LinkedIn profiles with precision and elegance.
         </p>
       </div>
+      
+      <Alert className="mb-6 max-w-2xl mx-auto">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Backend Required</AlertTitle>
+        <AlertDescription>
+          This app requires a backend service to scrape real LinkedIn profiles. 
+          Without it, demo data will be shown. See console for API request details.
+        </AlertDescription>
+      </Alert>
       
       <Card className="w-full max-w-2xl mx-auto glass-card animate-slide-up">
         <CardHeader>
@@ -116,6 +136,15 @@ const ProfileScraper: React.FC = () => {
       {profile && (
         <div className="mt-12 animate-fade-in w-full">
           <Separator className="my-8" />
+          {isUsingMockData && (
+            <Alert className="mb-6" variant="warning">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Mock Data</AlertTitle>
+              <AlertDescription>
+                Displaying mock profile data. Connect to a real backend scraping service to get actual LinkedIn data.
+              </AlertDescription>
+            </Alert>
+          )}
           <ProfileDisplay profile={profile} />
         </div>
       )}

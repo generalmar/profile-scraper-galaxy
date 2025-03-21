@@ -36,7 +36,7 @@ export interface Recommendation {
   text: string;
 }
 
-// Simulated response data for demo purposes
+// Simulated response data for demo purposes (will be used as fallback)
 const DEMO_PROFILES = new Map<string, LinkedInProfile>([
   [
     "john-doe",
@@ -154,10 +154,11 @@ export const extractProfileId = (url: string): string | null => {
   }
 };
 
+// API URL for the LinkedIn scraper backend
+const API_URL = import.meta.env.VITE_LINKEDIN_SCRAPER_API_URL || 'http://localhost:3000/api/scrape';
+
 /**
- * Scrapes a LinkedIn profile based on URL
- * In a real application, this would make an API request to a server
- * that handles the actual scraping
+ * Scrapes a LinkedIn profile based on URL by connecting to a backend service
  */
 export const scrapeLinkedInProfile = async (profileUrl: string): Promise<{ success: boolean; data?: LinkedInProfile; error?: string }> => {
   try {
@@ -170,20 +171,42 @@ export const scrapeLinkedInProfile = async (profileUrl: string): Promise<{ succe
       };
     }
     
-    // In a real application, you would make an API call to your backend service here
-    // For demo purposes, we'll simulate a delay and return mock data
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Check if we have demo data for this profile
-    const profileData = DEMO_PROFILES.get(profileId) || DEMO_PROFILES.get("john-doe");
-    
-    if (profileData) {
-      return { success: true, data: profileData };
-    } else {
-      return { 
-        success: false, 
-        error: "Could not retrieve profile data. Please try again or try another profile." 
-      };
+    try {
+      // Make an actual API call to your backend scraping service
+      const response = await fetch(`${API_URL}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: profileUrl }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to scrape profile');
+      }
+      
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error) {
+      console.error("Error calling scraping API:", error);
+      
+      // Fallback to demo data for demonstration purposes
+      console.warn("Falling back to demo data");
+      const fallbackData = DEMO_PROFILES.get(profileId) || DEMO_PROFILES.get("john-doe");
+      
+      if (fallbackData) {
+        console.log("Using fallback demo data");
+        return { 
+          success: true, 
+          data: fallbackData 
+        };
+      } else {
+        return { 
+          success: false, 
+          error: "Could not retrieve profile data and no fallback available." 
+        };
+      }
     }
   } catch (error) {
     console.error("Error scraping LinkedIn profile:", error);
@@ -193,20 +216,3 @@ export const scrapeLinkedInProfile = async (profileUrl: string): Promise<{ succe
     };
   }
 };
-
-/**
- * In a real-world application, this function would make an API call to a backend service
- * that handles the actual scraping of LinkedIn profiles. The implementation would:
- * 
- * 1. Send the LinkedIn URL to a backend endpoint
- * 2. The backend would use appropriate tools like Puppeteer, Playwright, or a scraping service
- * 3. The backend would handle authentication, session management, and proxy rotation if needed
- * 4. The scraped data would be processed, cleaned, and structured
- * 5. The results would be returned to the client
- * 
- * IMPORTANT: Web scraping may violate LinkedIn's Terms of Service. A proper implementation should:
- * - Respect robots.txt
- * - Include appropriate rate limiting
- * - Consider using LinkedIn's official API for permitted data access
- * - Ensure compliance with data privacy regulations
- */
